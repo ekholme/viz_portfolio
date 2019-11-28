@@ -2,6 +2,7 @@
 
 library(tidyverse)
 library(osmdata)
+library(extrafont)
 
 rva_streets <- getbb("Richmond Virginia United States") %>%
   opq() %>%
@@ -56,9 +57,13 @@ ggplot() +
     ylim = c(37.5, 37.6),
     expand = FALSE
   ) +
+  labs(
+    caption = "RVA"
+  ) +
   theme_void() +
   theme(
     plot.background = element_rect(fill = "black"),
-    panel.background = element_rect(fill = "black")
+    panel.background = element_rect(fill = "black"),
+    plot.caption = element_text(hjust = .5, color = vcu_gold, size = 32, family = "Rockwell")
   )
 #pick back up with colors later
