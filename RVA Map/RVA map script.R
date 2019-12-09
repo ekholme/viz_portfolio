@@ -1,4 +1,3 @@
-##creating a streetmap of RVA using the osmdata package
 
 library(tidyverse)
 library(osmdata)
@@ -37,7 +36,7 @@ coords2 <- str_split(coords, ",", simplify = TRUE) %>% as.vector() %>% as.numeri
 
 vcu_gold <- c("#fdbd10")
 
-ggplot() +
+rva_plot <- ggplot() +
   geom_sf(data = df$lines[[1]],
           inherit.aes = FALSE,
           color = vcu_gold,
@@ -46,12 +45,8 @@ ggplot() +
   geom_sf(data = df$lines[[2]],
           inherit.aes = FALSE,
           color = vcu_gold,
-          size = .1,
-          alpha = .6) +
-  geom_sf(data = df$lines[[3]],
-          color = "steelblue",
-          size = 2,
-          alpha = .8) +
+          size = .05,
+          alpha = .4) +
   coord_sf(
     xlim = c(-77.525, -77.375),
     ylim = c(37.5, 37.6),
@@ -64,6 +59,9 @@ ggplot() +
   theme(
     plot.background = element_rect(fill = "black"),
     panel.background = element_rect(fill = "black"),
-    plot.caption = element_text(hjust = .5, color = vcu_gold, size = 32, family = "Rockwell")
+    panel.border = element_rect(color = "white", fill = NA),
+    plot.caption = element_text(hjust = .5, color = vcu_gold, size = 32, family = "Rockwell"),
+    plot.margin = unit(c(.2, .4, .2, .4), "cm")
   )
-#pick back up with colors later
+
+ggsave(here::here("RVA Map/rva_map.jpeg"), plot = rva_plot, device = "jpeg")
