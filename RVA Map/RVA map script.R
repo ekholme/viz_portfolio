@@ -40,13 +40,13 @@ rva_plot <- ggplot() +
   geom_sf(data = df$lines[[1]],
           inherit.aes = FALSE,
           color = vcu_gold,
-          size = .6,
+          size = .3,
           alpha = .8) +
   geom_sf(data = df$lines[[2]],
           inherit.aes = FALSE,
           color = vcu_gold,
-          size = .05,
-          alpha = .4) +
+          size = .1,
+          alpha = .6) +
   coord_sf(
     xlim = c(-77.525, -77.375),
     ylim = c(37.5, 37.6),
