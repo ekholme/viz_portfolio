@@ -1,0 +1,297 @@
+---
+title: "maynaRd"
+author: "EE"
+date: "1/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+set.seed(0408)
+
+library(tidyverse)
+library(spotifyr)
+library(genius)
+library(hrbrthemes)
+library(extrafont)
+library(ggridges)
+library(ggtext)
+library(patchwork)
+
+import_roboto_condensed()
+
+theme_set(theme_ft_rc())
+
+```
+
+First, let's get all of the info for Maynard's main projects: Tool, A Perfect Circle, and Puscifer
+```{r get data}
+bands <- c("tool", "a perfect circle", "puscifer")
+
+maynard_raw <- bands %>%
+  map(~get_discography(artist = .)) %>%
+  reduce(bind_rows)
+
+#it looks like we have some duplicate tracks plus some remixes, so let's get rid of those
+maynard <- maynard_raw %>%
+  ungroup() %>%
+  mutate_if(is.character, ~str_to_lower(.)) %>% #making everything lowercase so I don't have to deal with capitalization
+  filter(str_detect(track_name, "mix", negate = TRUE),
+         str_detect(album_name, "mix|load|amotion", negate = TRUE)) %>%
+  distinct(track_name, .keep_all = TRUE) %>%
+  mutate(duration_s = duration_ms/1000,
+         artist_name = str_replace_all(artist_name, c("tool" = "Tool", "a perfect circle" = "APC", "puscifer" = "Puscifer")))
+
+
+```
+
+Spotify provides several metrics for each track (for more, see [this documentation](https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/)). The ones we're interested in here are:
+
++ __Energy__: _" 	Energy is a measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy."_
+
++ __Loudness__: _"The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks."_
+
++ __Valence__: _"A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry)."_
+
++ __Tempo__: _"The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration."_
+
++ __Duration__: _"The duration of the track in milliseconds." We converted this to seconds above in our analysis._
+
+<br/>
+
+### Track Duration
+
+As an initial analysis, let's look at track duration across different artists and albums.
+```{r song length dot}
+#this will get us an ordering of the album names just in case we need to use it later
+album_order <- maynard %>%
+  distinct(album_name) %>%
+  pull()
+
+ggplot(maynard, aes(x = fct_relevel(album_name, album_order), y = duration_s, color = artist_name)) +
+  geom_point(alpha = .8) +
+  scale_color_ft() +
+  scale_fill_ft() +
+  coord_flip() +
+  labs(title = "Length of Songs by Album",
+       y = "Length in Seconds",
+       x = "")
+  
+```
+
+Let's make a boxplot to get a sense of the distributions here.
+```{r song length box}
+ggplot(maynard, aes(x = fct_relevel(album_name, album_order), y = duration_s, color = artist_name)) +
+  geom_boxplot(alpha = 0) +
+  scale_color_ft() +
+  scale_fill_ft() +
+  coord_flip() +
+  labs(title = "Length of Songs by Album",
+       y = "Length in Seconds",
+       x = "")
+```
+
+From this, we can see that Tool songs are, on average, longer than APC or Puscifer songs, and that Tool songs tend to be getting longer in each subsequent album (note that albums are arranged chronologically by release within each artist). This isn't really a surprise, since it feels like almost every song on _Fear Inoculum_ is 10+ minutes, minus the little interludes. We can also see, though, between these last two plots, that there's a lot of variance in song length on _Fear Inoculum_ in comparison to every other album.
+
+### Loudness
+
+Let's see if loudness varies across Maynard's groups and albums. My guess is that Puscifer, an industrial & almost dance-y rock group, will have the loudest songs, whereas APC is more known for melodic things and will be the quietest. Tool songs will probably also have the flattest distributions. One thing to remember is that the data here gives _average_ loudness per song, so it won't really capture all of the intra-song changes (which are a hallmark for Tool in particular).
+
+```{r loudness distribs}
+ggplot(maynard, aes(x = loudness, y = fct_relevel(album_name, album_order), fill = artist_name, color = artist_name)) +
+  geom_density_ridges(alpha = .9) +
+  scale_color_ft() +
+  scale_fill_ft() +
+  labs(
+    title = "Distribution of Song Loudness by Album",
+    y = "",
+    x = "Loudness (dB)"
+  )
+```
+
+So, we definitely see more variation in the loudness of Tool songs, particularly on the later albums, but it looks like the APC album _Eat the Elephant_ is probably the loudest. I wouldn't have guessed that. There are definitley some louder songs (e.g "Get the Lead Out," "The Doomed"), but others are quieter or take time to build. Loudness of Puscifer songs seems to be more normally distributed (by album)  than either APC or Tool songs.
+
+### Energy 
+Ok, so let's see if we see similar distributions for energy.
+
+```{r energy distribs}
+ggplot(maynard, aes(x = energy, y = fct_relevel(album_name, album_order), fill = artist_name, color = artist_name)) +
+  geom_density_ridges(alpha = .9) +
+  scale_color_ft() +
+  scale_fill_ft() +
+  labs(
+    title = "Distribution of Song Energy by Album",
+    y = "",
+    x = "Energy"
+  )
+```
+
+Sort of? The distributions for Tool albums look somewhat similar -- keeping in mind that the metrics are on different scales -- as do the APC distributions. The distributions for energy in Puscifer albums appear somewhat flatter, though. Maybe looking at the correlations between these will be helpful.
+
+```{r energy loudness scatter}
+ggplot(maynard, aes(x = loudness, y = energy)) +
+  geom_point(aes(color = artist_name)) +
+  scale_color_ft() +
+  labs(
+    title = "Relationship between Song Loudness and Energy"
+  )
+```
+
+It looks like there's a strong relationship here, but the bigger issue is that all of the songs cluster around the same level of loudness, with a few exceptions from Tool (and a smaller number of APC exceptions), so it's a little bit hard to tell.
+
+Just to check, we can take a look at the estimated bivariate correlation.
+```{r energy loudness cor}
+psych::cor.ci(cbind(maynard$energy, maynard$loudness), plot = FALSE)
+```
+.78 is a pretty strong correlation!
+
+### Valence
+
+I'm going to guess valence is pretty low across all the board. Puscifer maybe will have the highest valence just because some of the songs are kinda jokey, and there are a smattering of uplifting Puscifer jams ("Grand Canyon" comes to mind). But my assumption overall is that valence will be loooow for everyone.
+
+Let's look at this using a histogram and faceting by artist because we haven't done that yet.
+```{r valence plots}
+ggplot(maynard, aes(x = valence, fill = artist_name, color = artist_name)) +
+  geom_histogram() +
+  facet_wrap(~ artist_name, ncol = 1) +
+  scale_fill_ft() +
+  scale_color_ft() +
+  labs(
+    title = "Valence of Songs"
+  ) +
+  theme(
+    legend.position = "none"
+  )
+```
+
+Who's this one little guy hanging out at maximum valence in the Tool tracks?
+```{r}
+maynard %>%
+  filter(valence == max(maynard$valence)) %>%
+  pull(track_name)
+```
+Well that one doesn't really count. If you've listened to Tool, you know that "Intermission" is a circus-y little interlude that lasts for < 1 minute. I'm not sure I'd classify it as a real song.
+
+### Tempo
+
+Finally, let's take a look at tempo. According to Spotify, tempo is the estimated beats per minute of a given song. Again, because Puscifer tends to be more industrial rock and dance-y, my intuition is that on average those songs will have the highest tempo, particularly songs on the earlier albums. Likewise, my guess is that APC will have the lowest tempo, and probably especially on _Thirteenth Step_. Tool songs are going to be all over the place, and the within-song variability makes it hard for me to even guess what the averages will look like. _7empest_ will probably be pretty high up there.
+
+Let's make a plot similar to the first plot we made to take a look at this. The X on each plot will represent the average.
+
+```{r tempo }
+ggplot() +
+  geom_point(data = maynard, aes(x = fct_relevel(album_name, album_order), y = tempo, color = artist_name), alpha = .8) +
+  scale_color_ft() +
+  scale_fill_ft() +
+  coord_flip() +
+  labs(title = "Tempo of Songs by Album",
+       y = "Tempo (BPM)",
+       x = "") +
+  geom_point(data = maynard %>%
+               group_by(artist_name, album_name) %>%
+               summarize(tempo = mean(tempo, na.rm = TRUE)) %>%
+               ungroup(),
+             aes(x = fct_relevel(album_name, album_order), y = tempo, color = artist_name),
+             shape = "x", size = 6)
+```
+
+And what are the 5 songs with the fastest tempos?
+```{r}
+maynard %>%
+  top_n(n = 5, wt = tempo) %>%
+  select(artist_name, album_name, track_name, tempo) %>%
+  arrange(desc(tempo))
+```
+
+There's a ton more we could do with this, but I'm going to wrap it up for now. Later on, I might return to this and work with some of the song lyrics. To wrap up, though, I'll put together a plot that revisits song duration in a bit of a different way.
+
+```{r duration circle plot}
+maynard_plot <- maynard %>%
+  distinct(artist_name, album_name) %>%
+  group_by(artist_name) %>%
+  mutate(shading = rev(row_number())) %>%
+  select(artist_name, album_name, shading) %>%
+  left_join(x = maynard, y = ., by = c("artist_name", "album_name")) %>%
+  arrange(track_name) %>%
+  mutate(id = row_number())
+
+pad <- 1000
+line_color <- "#464950"
+bckgrnd <- "#252a32"
+
+labels <- maynard_plot %>%
+  top_n(n = 5, wt = duration_s)
+
+center_text <- tibble(
+  labelz = "**<p style='color:white'>Duration of songs by Maynard James Keenan's bands: <span style='color:#ff0055'>Tool</span>, <span style='color:#909495'>A Perfect Circle</span>, and <span style='color:#0b53c1'>Puscifer.</span><br><span style='font-size:06pt'>*The 5 longest songs are all by <span style='color:#ff0055'>Tool.</span></span>*</p>**",
+  x = 0,
+  y2 = -250
+)
+
+mjk_circle <- ggplot(maynard_plot, aes(id, duration_s, color = artist_name)) +
+  geom_hline(aes(yintercept = (60)), color = line_color) +
+  geom_hline(aes(yintercept = (5*60)), color = line_color) +
+  geom_hline(aes(yintercept = (10*60)), color = line_color) +
+  geom_segment(aes(x = id, xend = id, y = 0, yend = duration_s)) +
+  geom_point() +
+  geom_richtext(data = labels,
+                aes(x = id, y = duration_s + 50, color = artist_name, label = track_name),
+                size = 3,
+                family = "Roboto Condensed",
+                label.color = NA,
+                fill = NA,
+                hjust = 0) +
+  geom_textbox(data = center_text,
+               aes(x = x, y = y2, label = labelz),
+               fill = NA, color = NA,
+               width = unit(40, "mm"),
+               box.hjust = .5,
+               size = 3,
+               hjust = .5) +
+  coord_polar() +
+  ylim(-.5*pad, max(maynard_plot$duration_s) + 850) +
+  scale_color_ft(
+    name = ""
+  ) +
+  theme_void() +
+  theme(
+    panel.background = element_rect(fill = bckgrnd),
+    plot.background = element_rect(fill = bckgrnd),
+    legend.position = "none",
+    plot.margin = margin(-10, -10, -10, -10, "lines")
+  )
+
+#ggsave(here::here("Spotify/test_circ.jpg"), device = "jpeg")
+
+mjk_lines <- ggplot(maynard_plot, aes(x = shading, y = duration_s, color = artist_name)) +
+  geom_point(alpha = .5) +
+  geom_point(data = maynard_plot %>%
+               group_by(artist_name, shading) %>%
+               summarize(duration_s = mean(duration_s, na.rm = TRUE)) %>%
+               ungroup()) +
+  geom_line(data = maynard_plot %>%
+               group_by(artist_name, shading) %>%
+               summarize(duration_s = mean(duration_s, na.rm = TRUE)) %>%
+               ungroup()) +
+  facet_wrap(~ artist_name) +
+  scale_color_ft() +
+  labs(
+    x = "",
+    y = "Song Duration (in seconds)",
+    caption = "Data from Spotify | Viz by Eric Ekholm (@ekholm_e)"
+  ) +
+  theme(
+    legend.position = "none",
+    plot.caption = element_text(hjust = .5),
+    panel.grid.minor.x = element_blank()
+  )
+
+full <- (mjk_circle + mjk_lines) + plot_layout(ncol = 1, heights = c(2, 1))
+
+ggsave(here::here("Spotify/maynaRd_circle.jpg"), plot = mjk_circle, device = "jpeg")
+
+ggsave(here::here("Spotify/maynaRd_plot.jpg"), plot = full, device = "jpeg")
+
+```
+

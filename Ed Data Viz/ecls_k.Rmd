@@ -1,0 +1,22 @@
+---
+title: "Ed Survey"
+author: "EE"
+date: "1/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+set.seed(0408)
+
+library(tidyverse)
+library(EdSurvey)
+```
+
+Ok, let's use the `downloadECLS_K` function from the `EdSurvey` package to get our dataset.
+```{r read data}
+downloadECLS_K(root = here::here("Ed Data Viz"), years = 2011)
+```
+
+RESUME LATER
