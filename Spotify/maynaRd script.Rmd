@@ -224,7 +224,7 @@ labels <- maynard_plot %>%
   top_n(n = 5, wt = duration_s)
 
 center_text <- tibble(
-  labelz = "**<p style='color:white'>Duration of songs by Maynard James Keenan's bands: <span style='color:#ff0055'>Tool</span>, <span style='color:#909495'>A Perfect Circle</span>, and <span style='color:#0b53c1'>Puscifer.</span><br><span style='font-size:06pt'>*The 5 longest songs are all by <span style='color:#ff0055'>Tool.</span></span>*</p>**",
+  labelz = "**<p style='color:white'>Duration of songs by Maynard James Keenan's bands: <span style='color:#ff0055'>Tool</span>, <span style='color:#909495'>A Perfect Circle</span>, and <span style='color:#0b53c1'>Puscifer.</span><br><span style='font-size:06pt'>*The 5 longest songs are all by <span style='color:#ff0055'>Tool.</span> The three rings correspond to 1 min, 5 mins, and 10 mins.</span>*</p>**",
   x = 0,
   y2 = -250
 )
@@ -247,6 +247,7 @@ mjk_circle <- ggplot(maynard_plot, aes(id, duration_s, color = artist_name)) +
                fill = NA, color = NA,
                width = unit(40, "mm"),
                box.hjust = .5,
+               family = "Roboto Condensed",
                size = 3,
                hjust = .5) +
   coord_polar() +
@@ -261,6 +262,46 @@ mjk_circle <- ggplot(maynard_plot, aes(id, duration_s, color = artist_name)) +
     legend.position = "none",
     plot.margin = margin(-10, -10, -10, -10, "lines")
   )
+
+
+test <- ggplot(maynard_plot, aes(id, duration_s, color = artist_name)) +
+  geom_hline(aes(yintercept = (60)), color = line_color) +
+  geom_hline(aes(yintercept = (5*60)), color = line_color) +
+  geom_hline(aes(yintercept = (10*60)), color = line_color) +
+  geom_segment(aes(x = id, xend = id, y = 0, yend = duration_s)) +
+  geom_point() +
+  facet_wrap(~ artist_name, nrow = 1) +
+  #geom_richtext(data = labels,
+  #              aes(x = id, y = duration_s + 50, color = artist_name, label = track_name),
+  #              size = 3,
+  #              family = "Roboto Condensed",
+  #              label.color = NA,
+  #              fill = NA,
+  #              hjust = 0) +
+  #geom_textbox(data = center_text,
+  #             aes(x = x, y = y2, label = labelz),
+  #             fill = NA, color = NA,
+  #             width = unit(40, "mm"),
+  #             box.hjust = .5,
+  #             size = 3,
+  #             hjust = .5) +
+  coord_polar() +
+  ylim(-.25*pad, max(maynard_plot$duration_s) + 850) +
+  scale_color_ft(
+    name = ""
+  ) +
+  geom_text(aes(label = artist_name, color = artist_name),
+            x = 0, y = max(maynard_plot$duration_s + 100)) +
+  theme_void() +
+  theme(
+    panel.background = element_rect(fill = bckgrnd),
+    plot.background = element_rect(fill = bckgrnd),
+    panel.spacing = unit(-2, "lines"),
+    strip.text = element_blank(),
+    legend.position = "none",
+    plot.margin = margin(-5, -5, -5, -5, "lines")
+  )
+
 
 #ggsave(here::here("Spotify/test_circ.jpg"), device = "jpeg")
 
@@ -287,11 +328,15 @@ mjk_lines <- ggplot(maynard_plot, aes(x = shading, y = duration_s, color = artis
     panel.grid.minor.x = element_blank()
   )
 
-full <- (mjk_circle + mjk_lines) + plot_layout(ncol = 1, heights = c(2, 1))
+full <- (mjk_circle + mjk_lines + plot_layout(ncol = 1, heights = c(5, 1)))
 
 ggsave(here::here("Spotify/maynaRd_circle.jpg"), plot = mjk_circle, device = "jpeg")
 
-ggsave(here::here("Spotify/maynaRd_plot.jpg"), plot = full, device = "jpeg")
+ggsave(here::here("Spotify/maynaRd_plot.jpg"), plot = full, device = "jpeg", height = 11, width = 8.5)
+
+test_p <- mjk_circle + test + plot_layout(ncol = 1, heights = c(3, 1))
+
+ggsave(here::here("Spotify/test_p.jpg"), plot = test_p, device = "jpeg")
 
 ```
 

@@ -1,0 +1,69 @@
+---
+title: "VQ Voronoi"
+author: "EE"
+date: "2/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(sf)
+library(tidyverse)
+library(USAboundaries)
+library(ggvoronoi)
+library(showtext)
+library(sysfonts)
+library(ggtext)
+
+font_add_google("Montserrat", "montserrat")
+
+showtext_auto()
+
+pal <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99")
+
+vq_geocoded <- read_csv(here::here("Ed Data Viz/VQ/Data/vq_geocoded.csv"))
+
+vq_hq <- vq_geocoded %>%
+  filter(quality_level >= 4) %>%
+  mutate(color = as_factor(sample(1:5, nrow(.), replace = TRUE)))
+```
+
+```{r get map}
+va_map <- us_states(states = "Virginia", resolution = "high")
+
+va_coords <- st_coordinates(va_map$geometry) %>%
+  as.data.frame() %>%
+  select(X, Y, group = L2) 
+
+```
+
+```{r plot map}
+vq_vor <- vq_hq %>%
+  distinct(lon, lat, .keep_all = TRUE) %>%
+ggplot(aes(x = lon, y = lat)) +
+  geom_voronoi(aes(fill = color), color = "grey50", alpha = .8, outline = va_coords) +
+  geom_point(color = "grey20", alpha = .7) +
+  theme_void() +
+  scale_fill_manual(
+    values = pal
+  ) +
+  labs(title = "In Virginia, High-Quality Early Childhood Care and Education can be Hard to Find",
+       subtitle = "The map below shows the level 4 and 5 early childhood care and education (ECCE) providers in Virginia as rated by Virginia Quality. Each point represents a provider, and each tile shows the geographic area closest to the provider within that tile. As we can see, in some areas, parents would have to travel quite a way to find a highly-rated provider.") +
+  theme(
+    legend.position = "none",
+    text = element_text(family = "montserrat"),
+    plot.title = element_markdown(size = 32),
+    plot.subtitle = element_textbox(size = 26, lineheight = 1),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  )
+#need to fix font in title/subtitle
+
+
+x11()
+print(vq_vor)
+
+aspect_ratio <- 2
+ggsave(filename = here::here("Ed Data Viz/VQ/vq_vor_map.jpg"), device = "jpeg", height = 7, width = 7*aspect_ratio)
+```
+
