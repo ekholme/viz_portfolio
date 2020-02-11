@@ -43,27 +43,28 @@ vq_vor <- vq_hq %>%
   distinct(lon, lat, .keep_all = TRUE) %>%
 ggplot(aes(x = lon, y = lat)) +
   geom_voronoi(aes(fill = color), color = "grey50", alpha = .8, outline = va_coords) +
-  geom_point(color = "grey20", alpha = .7) +
+  geom_point(color = "grey20", alpha = .6) +
   theme_void() +
   scale_fill_manual(
     values = pal
   ) +
-  labs(title = "In Virginia, High-Quality Early Childhood Care and Education can be Hard to Find",
-       subtitle = "The map below shows the level 4 and 5 early childhood care and education (ECCE) providers in Virginia as rated by Virginia Quality. Each point represents a provider, and each tile shows the geographic area closest to the provider within that tile. As we can see, in some areas, parents would have to travel quite a way to find a highly-rated provider.") +
+  labs(title = "<b>In Virginia, High-Quality Early Childhood Care and Education can be Hard to Find</b><br>
+       <span style='font-size:30pt'>The map below shows the level 4 and 5 early childhood care and education (ECCE) providers in Virginia as rated by Virginia Quality. Each point represents a provider, and each tile shows the geographic area closest to the provider within that tile. As we can see, in some areas, particularly south and southwest Virginia, parents would have to travel quite a way to find a highly-rated provider.</span>",
+       caption = "Data from Virginia Quality | Viz by Eric Ekholm (@ekholm_e)"
+) +
   theme(
     legend.position = "none",
     text = element_text(family = "montserrat"),
-    plot.title = element_markdown(size = 32),
-    plot.subtitle = element_textbox(size = 26, lineheight = 1),
-    plot.margin = margin(1, 1, 1, 1, "cm")
+    plot.title = element_textbox(size = 36, lineheight = 0.1),
+    plot.caption = element_markdown(size = 20),
+    plot.margin = margin(1, 1, 1, 1, "cm"),
+    plot.background = element_rect(fill = "grey90")
   )
-#need to fix font in title/subtitle
-
 
 x11()
 print(vq_vor)
 
 aspect_ratio <- 2
-ggsave(filename = here::here("Ed Data Viz/VQ/vq_vor_map.jpg"), device = "jpeg", height = 7, width = 7*aspect_ratio)
+ggsave(filename = here::here("Ed Data Viz/VQ/Viz/vq_vor_map.jpg"), device = "jpeg", height = 7, width = 7*aspect_ratio)
 ```
 
