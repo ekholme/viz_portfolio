@@ -2,6 +2,11 @@
 
 This repo serves as a portfolio for visualizations created as part of other projects as well as miscellaneous visualizations. Additional visualizations created as part of the [#TidyTuesday](https://github.com/rfordatascience/tidytuesday/blob/master/README.md) project can be found in this [repo](https://github.com/ekholme/TidyTuesday).
 
+## Laura Horvath Comeback
+Showing the epic comeback by Laura Horvath at the 2022 Crossfit Games
+
+[![](https://github.com/ekholme/viz_portfolio/blob/master/Crossfit/lh_comeback.png?raw=true)](https://github.com/ekholme/viz_portfolio/blob/master/Crossfit/lh_comeback.png?raw=true)
+
 ## Virginia Early Childhood Provider Voronoi Tesselation
 I created a Voronoi tesselation, which shows points representing early childhood care and education providers as points and geographic areas indicating the closest providers as tiles. Data was downloaded from the [Virginia Quality](https://www.virginiaquality.com/) website.
 
